@@ -41,14 +41,12 @@ public class Robot {
 
         Sound.twoBeeps();
 
-        // Slave waits for Master to connect
         btc = Bluetooth.waitForConnection();
 
         LCD.clear();
         LCD.drawString(connected, 0, 0);
         LCD.refresh();
 
-        // Set up the data input and output streams
         dis = btc.openDataInputStream();
         dos = btc.openDataOutputStream();
 
@@ -70,7 +68,6 @@ public class Robot {
             // Respond to the Master's command which is stored in command[0]
 
             switch (command[0]) {
-                // Get the battery voltage
                 case COMMAND_BATTERY_VOLTAGE:
                     reply[0] = Battery.getVoltageMilliVolt();
                     for (int n = 1; n < 8; n++) {
@@ -126,13 +123,9 @@ public class Robot {
                     colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
                     break;
 
-
-
-                // Rotate requested angle and return sonic sensor distance
                 case COMMAND_TURN:
                     compassPilot.setMoveSpeed(200);
                     compassPilot.rotate(command[1]);
-                    //sonic.capture();
                     try {
                         Thread.sleep(20);
                     } catch (InterruptedException e) {
@@ -148,7 +141,7 @@ public class Robot {
                     }
                     break;
 
-            } // End case structure
+            }
 
             // Slave send back reply
             LCD.clear();
@@ -163,8 +156,6 @@ public class Robot {
             }
 
         }
-
-        // Close the data input and output streams
         dis.close();
         dos.close();
         Thread.sleep(100); // wait for data to drain
