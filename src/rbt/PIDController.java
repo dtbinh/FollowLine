@@ -1,3 +1,5 @@
+package rbt;
+
 /**
  * Created by IntelliJ IDEA.
  * User: eirik

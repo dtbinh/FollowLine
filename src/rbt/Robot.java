@@ -1,7 +1,15 @@
-import lejos.nxt.*;
+package rbt;
+
+import lejos.nxt.ColorLightSensor;
+import lejos.nxt.Motor;
+import lejos.nxt.SensorPort;
 import lejos.nxt.addon.CompassSensor;
+import lejos.nxt.LCD;
+import lejos.nxt.Sound;
+import lejos.nxt.Battery;
 import lejos.nxt.comm.*;
 import lejos.robotics.navigation.*;
+import rbt.PIDController;
 
 import java.io.*;
 
