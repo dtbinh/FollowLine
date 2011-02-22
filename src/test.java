@@ -7,7 +7,7 @@ public class test {
 
         Motor mA = Motor.A;
         Motor mC = Motor.C;
-        ColorLightSensor cs = new ColorLightSensor(SensorPort.S4, ColorLightSensor.TYPE_COLORFULL);
+        ColorLightSensor cs = new ColorLightSensor(SensorPort.S2, ColorLightSensor.TYPE_COLORFULL);
         //cs.setFloodlight(Colors.Color.WHITE);
 
         cs.setFloodlight(true);
@@ -32,18 +32,18 @@ public class test {
             tacho += mC.getTachoCount();
             tacho = tacho / 2;
             distance = getMm(tacho);
-            if (distance > 470 || halt) {
-                mA.stop();
-                mC.stop();
-                LCD.drawInt(distance, 0, 0);
-                LCD.drawInt(tacho, 0, 1);
-                halt = true;
-                try {
-                    Thread.sleep(3000);
-                } catch (InterruptedException e) {
-
-                }
-            } else {
+//            if (distance > 470 || halt) {
+//                mA.stop();
+//                mC.stop();
+//                LCD.drawInt(distance, 0, 0);
+//                LCD.drawInt(tacho, 0, 1);
+//                halt = true;
+//                try {
+//                    Thread.sleep(3000);
+//                } catch (InterruptedException e) {
+//
+//                }
+//            } else {
                 valueBeingRead = cs.readValue();
                 LCD.drawInt(valueBeingRead, 0, 0);
                 error = valueBeingRead - offset;
@@ -76,7 +76,7 @@ public class test {
 
                 lastError = error;
             }
-        }
+//        }
     }
 
     public static int getMm(int tacho) {
