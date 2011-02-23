@@ -1,7 +1,6 @@
 package rbt;
 
-import lejos.nxt.LCD;
-import lejos.nxt.Sound;
+import lejos.nxt.*;
 import lejos.nxt.comm.*;
 
 import java.io.*;
@@ -28,7 +27,6 @@ public class Robot {
         DataInputStream dis;
         DataOutputStream dos;
         BTConnection btc;
-
         LCD.drawString(waiting, 0, 0);
         LCD.refresh();
 
@@ -52,7 +50,6 @@ public class Robot {
             }
 
 
-
             // Respond to the Master's command which is stored in command[0]
 
             switch (command[0]) {
@@ -61,9 +58,8 @@ public class Robot {
                     break;
 
                 case COMMAND_TRAVEL:
-                    reply = operations.travel(command[1]);
+                    reply = operations.travel(command[1], command[2]);
                     break;
-
                 case COMMAND_READ_COLOR:
                     reply = operations.read_Color();
                     break;

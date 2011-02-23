@@ -9,70 +9,85 @@ public class Operations {
     private Motor motorC = Motor.C;
     private TachoPilot tachoPilot;
     private ColorLightSensor colorLightSensor;
-    int offset = 33;
-    int tp = 50;
-    int kp = 160;
+    int offset = 33;     //33
+    int tp = 50;         //50
+    int kp = 170;        //150
+    int kd = 400;        //400
+
+    final int BLACK_VALUE = 25;
 
 
     public Operations() {
         tachoPilot = new TachoPilot(56.0f, 110.0f, motorA, motorC);
-        colorLightSensor = new ColorLightSensor(SensorPort.S2, ColorLightSensor.TYPE_COLORFULL);
-        colorLightSensor.setFloodlight(true);
+        colorLightSensor = new ColorLightSensor(SensorPort.S2, ColorLightSensor.TYPE_COLORRED);
     }
 
-    public int[] travel(int length) {
+    public int[] travel(int length, int findColor) {
         int[] reply = new int[8];
-        int lightValue;
-        int turn;
-        int powerA;
-        int powerC;
+        double le = 0.8;
+        if (findColor == 0) {
+            le = 1;
+            reply[0] = 0;
+        }
+        PIDmove(length, le);
+        if (findColor == 1) {
+            reply[0] = moveFindColor(length, reply);
+        }
+        for (int n = 1; n < 8; n++) {
+            reply[n] = 0;
+        }
+        return reply;
+
+    }
+
+    private void resetTacho() {
         motorA.resetTachoCount();
         motorC.resetTachoCount();
         tachoPilot.reset();
-        while (true) {
-            if (getMM(motorA.getTachoCount()) >= length * 0.8) {
+    }
+
+    private int moveFindColor(int length, int[] reply) {
+        int readValue = 0;
+        motorA.stop();
+        motorC.stop();
+        colorLightSensor.setType(ColorLightSensor.TYPE_COLORFULL);
+        tachoPilot.travel((float) (length * 0.3), true);
+        while (tachoPilot.isMoving()) {
+            readValue = colorLightSensor.readValue();
+            if (readValue != 1 && readValue != 0 && readValue != 6) {
                 motorA.stop();
                 motorC.stop();
-                colorLightSensor.setFloodlight(false);
-                colorLightSensor.setType(ColorLightSensor.TYPE_COLORFULL);
-                tachoPilot.travel((float) (length * 0.3), true);
-                while (tachoPilot.isMoving()) {
-                    if (colorLightSensor.readValue() != 1 && colorLightSensor.readValue() != 0) {
-                        motorA.stop();
-                        motorC.stop();
-                        reply[0] = colorLightSensor.readValue();
-                        motorA.resetTachoCount();
-                        motorC.resetTachoCount();
-                        colorLightSensor.setFloodlight(true);
-                        LCD.clear();
-                        LCD.drawInt(length, 0, 0);
-                        LCD.drawInt((int) getMM((motorA.getTachoCount() + motorC.getTachoCount()) / 2), 0, 1);
-                        LCD.refresh();
-                        for (int n = 1; n < 8; n++) {
-                            reply[n] = 0;
-                        }
-                        return reply;
-                    }
-                }
-                LCD.clear();
-                LCD.drawInt(length, 0, 0);
-                LCD.drawInt((int) getMM((motorA.getTachoCount() + motorC.getTachoCount()) / 2), 0, 1);
-                LCD.refresh();
-                for (int n = 1; n < 8; n++) {
-                    reply[n] = 0;
-                }
+                colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
                 break;
             }
+            colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
+            for (int n = 1; n < 8; n++) {
+                reply[n] = 0;
+            }
+            break;
+        }
+        return readValue;
+    }
+
+    private void PIDmove(int length, double le) {
+        int lightValue;
+        int turn;
+        int powerA;
+        int error;
+        int powerC;
+        int lastError = 0;
+        int derivative;
+        resetTacho();
+        while (getMM(motorA.getTachoCount()) < length * le) {
             lightValue = colorLightSensor.readValue();
-            LCD.clear();
-            LCD.drawInt(lightValue, 0, 0);
-            turn = (lightValue - offset) * kp;
+
+            error = lightValue - offset;
+            derivative = error - lastError;
+            turn = (kp * error) + (kd * derivative);
             turn = turn / 100;
             powerA = tp - turn;
             powerC = tp + turn;
-            LCD.drawInt(powerA, 0, 1);
-            LCD.drawInt(powerC, 0, 2);
-            LCD.refresh();
+
             if (powerA > 0) {
                 motorA.setPower(powerA);
                 motorA.forward();
@@ -89,27 +104,21 @@ public class Operations {
                 motorC.setPower(powerC);
                 motorC.backward();
             }
-
+            lastError = error;
         }
-        return reply;
-
     }
 
     public void turn(int degrees) {
         tachoPilot.setMoveSpeed(200);
-        tachoPilot.reset();
-        tachoPilot.rotate(degrees, true);
+        resetTacho();
+        tachoPilot.rotate(degrees * 1.1f, true);
         while (tachoPilot.isMoving()) {
-            if (Math.abs(tachoPilot.getAngle()) > Math.abs(degrees * 0.8) && colorLightSensor.readValue() < 25) {
+            if (Math.abs(tachoPilot.getAngle()) > Math.abs(degrees * 0.8) && colorLightSensor.readValue() < BLACK_VALUE + 10) {
                 tachoPilot.stop();
-                LCD.clear();
-                LCD.drawInt(colorLightSensor.readValue(), 0, 0);
-                LCD.drawInt((int) tachoPilot.getAngle(), 0, 1);
-                LCD.refresh();
+                Sound.beepSequence();
             }
         }
-
-        return;
+        calibrate();
     }
 
     public int[] readValue() {
@@ -123,13 +132,12 @@ public class Operations {
 
     public int[] read_Color() {
         int[] reply = new int[8];
-        colorLightSensor.setFloodlight(false);
         colorLightSensor.setType(ColorLightSensor.TYPE_COLORFULL);
         reply[0] = colorLightSensor.readValue();
         for (int n = 1; n < 8; n++) {
             reply[n] = 0;
         }
-        colorLightSensor.setFloodlight(true);
+        colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
         return reply;
     }
 
@@ -154,20 +162,17 @@ public class Operations {
 
     public int[] sweep() {
         int[] reply = new int[8];
-        tachoPilot.reset();
+        resetTacho();
         tachoPilot.rotate(15);
         int i = 0;
         do {
             tachoPilot.rotate(-360, true);
             while (tachoPilot.isMoving()) {
-                if (colorLightSensor.readValue() < 25) {
+                if (colorLightSensor.readValue() < BLACK_VALUE + 10) {
                     tachoPilot.stop();
-                    LCD.clear();
-                    LCD.drawInt(colorLightSensor.readValue(), 0, 0);
-                    LCD.drawInt((int) tachoPilot.getAngle(), 0, 1);
-                    LCD.refresh();
                     reply[i] = (int) tachoPilot.getAngle();
                     i++;
+                    Sound.beep();
                     tachoPilot.rotate(-15);
                 }
             }
@@ -185,5 +190,21 @@ public class Operations {
             reply[k] = 255;
         }
         return keepItRunning;
+    }
+
+    private void calibrate() {
+        int value = colorLightSensor.readValue();
+        float angle = 2;
+        while (value > BLACK_VALUE) {
+            tachoPilot.rotate(angle);
+            angle = -angle;
+            if (angle < 0) {
+                angle -= 2;
+            } else {
+                angle += 2;
+            }
+
+            value = colorLightSensor.readValue();
+        }
     }
 }
