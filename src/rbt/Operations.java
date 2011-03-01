@@ -48,23 +48,19 @@ public class Operations {
 
     private int moveFindColor(int length, int[] reply) {
         int readValue = 0;
-        motorA.stop();
-        motorC.stop();
         colorLightSensor.setType(ColorLightSensor.TYPE_COLORFULL);
         tachoPilot.travel((float) (length * 0.3), true);
         while (tachoPilot.isMoving()) {
             readValue = colorLightSensor.readValue();
-            if (readValue != 1 && readValue != 0 && readValue != 6) {
-                motorA.stop();
-                motorC.stop();
+            if (readValue == 4 || readValue == 2 || readValue == 3 || readValue == 5) {
+                tachoPilot.stop();
                 colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
                 break;
             }
-            colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
-            for (int n = 1; n < 8; n++) {
-                reply[n] = 0;
-            }
-            break;
+        }
+        colorLightSensor.setType(ColorLightSensor.TYPE_COLORRED);
+        for (int n = 1; n < 8; n++) {
+            reply[n] = 0;
         }
         return readValue;
     }
@@ -106,6 +102,8 @@ public class Operations {
             }
             lastError = error;
         }
+        motorA.stop();
+        motorC.stop();
     }
 
     public void turn(int degrees) {
